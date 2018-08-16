@@ -19,6 +19,31 @@ class Posrednik extends Client {
 
 }
 
+const client = new Posrednik();
+
+client.gateways.register('modlogs', {
+    moderator: {
+        type: 'user',
+        default: null
+    },
+    user: {
+        type: 'user',
+        default: null
+    },
+    action: {
+        type: 'user',
+        default: null
+    },
+    timed: {
+        type: 'boolean',
+        default: false
+    },
+    duration: {
+        type: 'integer',
+        default: 0
+    }
+});
+
 // Logs the account in
 // noinspection JSIgnoredPromiseFromCall
-new Posrednik().login(config.token);
+client.login(config.token);
