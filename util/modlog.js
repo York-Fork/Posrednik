@@ -83,9 +83,9 @@ module.exports = class ModLog {
             this.case = 0;
             return this.provider.create('modlogs', this.guild.id, { infractions: [this.pack] }).then(() => 0);
         }
-        modlogs.array.push(this.pack);
+        this.case = modlogs.infractions.length
+        modlogs.infractions.push(this.pack);
         await this.provider.update('modlogs', this.guild.id, modlogs);
-        return this.case = modlogs.array.length - 1; // eslint-disable-line no-return-assign
     }
 
     // Here we pack all the info together
