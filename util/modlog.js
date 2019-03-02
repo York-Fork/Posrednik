@@ -9,6 +9,7 @@ module.exports = class ModLog {
         this.user = null;
         this.moderator = null;
         this.reason = null;
+        this.timed = null;
 
         this.case = null;
     }
@@ -43,10 +44,15 @@ module.exports = class ModLog {
         return this;
     }
 
+    setTimed(value) {
+        this.timed = value;
+        return this;
+    }
+
     // Checks if the modlog channel still exsists if not it throws an error to the console
 
     async send() {
-        const channel = this.guild.channels.get(this.guild.settings.channels.modlog);
+        const channel = this.guild.channels.get(this.guild.settings.modlog);
         if (!channel) throw 'The modlog channel does not exist, did it get deleted?';
         await this.getCase();
         return channel.send({ embed: this.embed });
@@ -61,7 +67,8 @@ module.exports = class ModLog {
             .setDescription([
                 `**Type**: ${this.type[0].toUpperCase() + this.type.slice(1)}`,
                 `**User**: ${this.user.tag} (${this.user.id})`,
-                `**Reason**: ${this.reason || `Use \`${this.guild.settings.prefix}reason ${this.case}\` to claim this log.`}`
+                `**Reason**: ${this.reason || `Use \`${this.guild.settings.prefix}reason ${this.case}\` to claim this log.`}`,
+                `**Timed Infraction**: ${this.timed}`
             ])
             .setFooter(`Case ${this.case}`)
             .setTimestamp();
@@ -71,8 +78,14 @@ module.exports = class ModLog {
     // Here we get the case number and create a modlog provider entry
 
     async getCase() {
-        this.case = this.guild.settings.modlogs.length;
-        return this.guild.settings.update('modlogs', this.pack);
+        const modlogs = await this.provider.get('modlogs', this.guild.id);
+        if (!modlogs) {
+            this.case = 0;
+            return this.provider.create('modlogs', this.guild.id, { infractions: [this.pack] }).then(() => 0);
+        }
+        this.case = modlogs.infractions.length
+        modlogs.infractions.push(this.pack);
+        await this.provider.update('modlogs', this.guild.id, modlogs);
     }
 
     // Here we pack all the info together
@@ -83,8 +96,13 @@ module.exports = class ModLog {
             user: this.user.id,
             moderator: this.moderator.id,
             reason: this.reason,
-            case: this.case
+            case: this.case,
+            timed: this.timed
         };
+    }
+
+    get provider() {
+        return this.client.providers.default;
     }
 
     // And here we just define the color for a certain type of offence or action

@@ -2,29 +2,31 @@ const { Command } = require('klasa');
 
 module.exports = class extends Command {
 
-    constructor(...args) {
-        super(...args, {
-            name: 'case',
-            permLevel: 4,
-            runIn: ['text'],
-            description: language => language.get('COMMAND_CASE_DESCRIPTION'),
-            usage: '<case:integer>'
-        });
-    }
+  constructor(...args) {
+    super(...args, {
+      name: 'case',
+      permLevel: 4,
+      runIn: ['text'],
+      description: language => language.get('COMMAND_CASE_DESCRIPTION'),
+      usage: '<case:integer>'
+    });
+  }
 
-    async run(msg, [selected]) {
-        const log = msg.guild.settings.modlogs[selected];
-        if (!log) return msg.send(`${msg.language.get('COMMAND_CASE_SORRY')} ${msg.author}, ${msg.language.get('COMMAND_CASE_NO')}`);
+  async run(msg, [caseNum]) {
+    const logs = await this.provider.get('modlogs', msg.guild.id);
+    const info = logs.infractions.find(infractions => infractions.case === caseNum);
 
-        const [user, moderator] = await Promise.all([
-            this.client.users.fetch(log.user),
-            this.client.users.fetch(log.moderator)
-        ]);
-        return msg.send([
-            `User      : ${user.tag} (${user.id})`,
-            `Moderator : ${moderator.tag} (${moderator.id})`,
-            `Reason    : ${log.reason || `${msg.language.get('COMMAND_CASE_REASON')} '${msg.guild.settings.prefix}reason ${selected}' ${msg.language.get('COMMAND_CASE_CLAIM')}`}`
-        ], { code: 'http' });
-    }
+    const user = this.client.users.get(info.user);
+    const moderator = this.client.users.get(info.moderator);
 
+    return msg.send([
+      `User      : ${user.tag} (${user.id})`,
+      `Moderator : ${moderator.tag} (${moderator.id})`,
+      `Reason    : ${info.reason || `${msg.language.get('COMMAND_CASE_REASON')} '${msg.guild.settings.prefix}reason ${caseNum}' ${msg.language.get('COMMAND_CASE_CLAIM')}`}`
+    ], { code: 'http' });
+  }
+
+  get provider() {
+    return this.client.providers.default;
+  }
 };
